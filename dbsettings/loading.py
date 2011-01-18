@@ -20,11 +20,12 @@ class SettingDict(SortedDict):
         for k in self.keyOrder:
             yield self[k]
 
-    def __contains__(self, value):
+    """def __contains__(self, value):
+        print self.values()
         for v in self.values():
             if v == value:
                 return True
-        return False
+        return False"""
 
 _settings = SettingDict()
 
