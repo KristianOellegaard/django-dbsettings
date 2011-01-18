@@ -1,6 +1,7 @@
 def set_defaults(app, *defaults):
     "Installs a set of default values during syncdb processing"
     from django.core.exceptions import ImproperlyConfigured
+    from django.dispatch import dispatcher
     from django.db.models import signals
     from dbsettings.loading import get_setting_storage, set_setting_value
 
@@ -22,4 +23,4 @@ def set_defaults(app, *defaults):
                 except:
                     raise ImproperlyConfigured("%s requires dbsettings." % app_label)
 
-    signals.post_syncdb.connect(install_settings, sender=app)
+    dispatcher.connect(install_settings, sender=app, signal=signals.post_syncdb, weak=False)
