@@ -2,7 +2,7 @@ import datetime
 
 from django import forms
 
-from dbsettings.loading import get_setting_storage, set_setting_value
+from dbsettings.loading import get_setting_storage
 
 try:
     from decimal import Decimal
@@ -11,16 +11,17 @@ except ImportError:
 
 __all__ = ['Value', 'BooleanValue', 'DecimalValue', 'DurationValue',
       'FloatValue', 'IntegerValue', 'PercentValue', 'PositiveIntegerValue',
-      'StringValue']
+      'StringValue', 'TextValue']
 
 class Value(object):
 
     creation_counter = 0
 
-    def __init__(self, description=None, help_text=None, choices=None):
+    def __init__(self, description=None, help_text=None, choices=None, required=True):
         self.description = description
         self.help_text = help_text
         self.choices = choices or []
+        self.required = required
 
         self.creation_counter = Value.creation_counter
         Value.creation_counter += 1
@@ -56,9 +57,7 @@ class Value(object):
             return None
 
     def __set__(self, instance, value):
-        current_value = self.__get__(instance)
-        if self.to_python(value) != current_value:
-            set_setting_value(*(self.key + (value,)))
+        raise AttributeError, "Settings may not changed in this manner."
 
     # Subclasses should override the following methods where applicable
 
@@ -68,11 +67,11 @@ class Value(object):
 
     def get_db_prep_save(self, value):
         "Returns a value suitable for storage into a CharField"
-        return str(value)
+        return unicode(value)
 
     def to_editor(self, value):
         "Returns a value suitable for display in a form widget"
-        return str(value)
+        return unicode(value)
 
 ###############
 # VALUE TYPES #
@@ -123,7 +122,7 @@ class DurationValue(Value):
             raise forms.ValidationError('The maximum allowed value is %s' % datetime.timedelta.max)
 
     def get_db_prep_save(self, value):
-        return str(value.days * 24 * 3600 + value.seconds + float(value.microseconds) / 1000000)
+        return unicode(value.days * 24 * 3600 + value.seconds + float(value.microseconds) / 1000000)
 
 class FloatValue(Value):
     field = forms.FloatField
@@ -148,7 +147,7 @@ class PercentValue(Value):
             def render(self, *args, **kwargs):
                 # Place a percent sign after a smaller text field
                 attrs = kwargs.pop('attrs', {})
-                attrs['size'] = attrs['max_length'] = 6
+                attrs['size'] = attrs['maxlength'] = 6
                 return forms.TextInput.render(self, attrs=attrs, *args, **kwargs) + '%'
 
     def to_python(self, value):
@@ -164,3 +163,8 @@ class PositiveIntegerValue(IntegerValue):
 
 class StringValue(Value):
     field = forms.CharField
+
+class TextValue(Value):
+    class field(forms.CharField):
+		class widget(forms.Textarea):
+			pass
